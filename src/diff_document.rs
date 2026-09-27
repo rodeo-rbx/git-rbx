@@ -340,18 +340,9 @@ pub(crate) fn ops_from_edit_ops(
     (ops, counts)
 }
 
-/// Serialize a change set computed from `old` to `new`.
+/// Serialize a change set computed from `old` to `new`, also returning the
+/// ids it numbered each side's instances with.
 pub fn build(
-    old: &dyn DomView,
-    new: &dyn DomView,
-    changes: &SemanticChangeSet,
-    config: &DiffConfig,
-) -> DiffDocument {
-    build_with_ids(old, new, changes, config).0
-}
-
-/// [`build`], also returning the ids it numbered each side's instances with.
-pub(crate) fn build_with_ids(
     old: &dyn DomView,
     new: &dyn DomView,
     changes: &SemanticChangeSet,

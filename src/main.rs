@@ -66,17 +66,23 @@ enum Command {
         /// `rodeo` on PATH). Neither input is modified
         #[arg(long, conflicts_with_all = ["json", "summary_only", "format"])]
         studio: bool,
+
+        /// JSON: add each side's properties, keyed by the document's
+        /// manifest ids, plus each class's default values and Content
+        /// properties, for readers that show unchanged instances too
+        #[arg(long)]
+        with_properties: bool,
     },
-    /// JSON for editor viewers: every instance with its non-default
-    /// properties, each class's defaults and Content-typed properties, and
-    /// with two files the diff document between them, whose ids the instances
-    /// carry. Git LFS pointers are resolved
-    View {
-        /// The file, or the old version when NEW_FILE is given
+    /// Print a file's instances with their authored, non-default properties.
+    /// Git LFS pointers are resolved
+    Show {
+        /// The file
         file: String,
 
-        /// The new version, to include the changes from FILE to it
-        new_file: Option<String>,
+        /// `text` is the instance tree; `json` adds each class's default
+        /// values and Content properties
+        #[arg(long, value_enum, default_value = "text")]
+        format: ShowFormat,
     },
     /// Semantic diff of every Roblox file changed between two revisions —
     /// what `git diff --stat` cannot say about binaries. Rename-aware and
@@ -261,6 +267,7 @@ fn main() -> Result<()> {
             max_rows,
             timing,
             studio,
+            with_properties,
         } => {
             if studio {
                 return cmd_diff_studio(&old_file, &new_file);
@@ -272,9 +279,12 @@ fn main() -> Result<()> {
             } else {
                 Format::Pretty
             });
-            cmd_diff(&old_file, &new_file, format, max_rows, timing)
+            if with_properties && format != Format::Json {
+                bail!("--with-properties needs --format json");
+            }
+            cmd_diff(&old_file, &new_file, format, max_rows, timing, with_properties)
         }
-        Command::View { file, new_file } => cmd_view(&file, new_file.as_deref()),
+        Command::Show { file, format } => cmd_show(&file, format),
         Command::Changes {
             base,
             head,
@@ -369,6 +379,12 @@ enum Format {
     Markdown,
 }
 
+#[derive(Clone, Copy, ValueEnum)]
+enum ShowFormat {
+    Text,
+    Json,
+}
+
 impl From<Format> for OutputFormat {
     fn from(format: Format) -> Self {
         match format {
@@ -386,6 +402,7 @@ fn cmd_diff(
     format: Format,
     max_rows: usize,
     timing: bool,
+    with_properties: bool,
 ) -> Result<()> {
     let total_start = Instant::now();
 
@@ -409,6 +426,11 @@ fn cmd_diff(
             diff_model_compact_doms_with_config(&old_dom, &mut new_dom, &DiffConfig::default());
         print!("{}", render_markdown(&diffs, max_rows));
         pivots.as_ref().map(|p| (p.pivots.len(), p.detected))
+    } else if format == Format::Json && with_properties {
+        let document =
+            git_rbx::show::diff_with_properties(&old_dom, &mut new_dom, &DiffConfig::default());
+        println!("{}", serde_json::to_string(&document)?);
+        Some((document.document.pivots.len(), 0))
     } else if format == Format::Json {
         let document =
             diff_model_compact_doms_document(&old_dom, &mut new_dom, &DiffConfig::default());
@@ -442,16 +464,12 @@ fn cmd_diff(
     Ok(())
 }
 
-fn cmd_view(file: &str, new_file: Option<&str>) -> Result<()> {
-    let document = match new_file {
-        Some(new_file) => {
-            let old_dom = load_diff_file(file, None)?.0;
-            let mut new_dom = load_diff_file(new_file, None)?.0;
-            git_rbx::view::view_document(Some(&old_dom), &mut new_dom)
-        }
-        None => git_rbx::view::view_document(None, &mut load_diff_file(file, None)?.0),
-    };
-    println!("{}", serde_json::to_string(&document)?);
+fn cmd_show(file: &str, format: ShowFormat) -> Result<()> {
+    let shown = git_rbx::show::show(&load_diff_file(file, None)?.0, &DiffConfig::default());
+    match format {
+        ShowFormat::Text => print!("{}", git_rbx::show::render_text(&shown)),
+        ShowFormat::Json => println!("{}", serde_json::to_string(&shown)?),
+    }
     Ok(())
 }
 

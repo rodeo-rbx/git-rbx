@@ -327,7 +327,7 @@ fn print_property_change(change: &PropertyChange, name: &str, indent_level: usiz
 }
 
 /// Format a PropertyValue for human-readable display.
-fn format_property_value(v: &PropertyValue) -> String {
+pub(crate) fn format_property_value(v: &PropertyValue) -> String {
     match v {
         PropertyValue::Nil => "nil".to_string(),
         PropertyValue::Bool { value } => value.to_string(),

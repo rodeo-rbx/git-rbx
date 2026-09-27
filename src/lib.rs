@@ -22,7 +22,7 @@ mod reference_value;
 mod rigid_groups;
 mod semantic_verify;
 mod value_compare;
-pub mod view;
+pub mod show;
 
 pub use conflict_file::{
     conflict_report, finalize, find_container, list_entries, mark_entry, mark_entry_custom,
@@ -108,6 +108,20 @@ pub fn diff_model_compact_doms_document(
     new_dom: &mut DiffDom,
     config: &DiffConfig,
 ) -> DiffDocument {
+    diff_model_compact_doms_document_with_ids(old_dom, new_dom, config).0
+}
+
+/// [`diff_model_compact_doms_document`], also returning the manifest id of
+/// each side's instances.
+pub(crate) fn diff_model_compact_doms_document_with_ids(
+    old_dom: &DiffDom,
+    new_dom: &mut DiffDom,
+    config: &DiffConfig,
+) -> (
+    DiffDocument,
+    std::collections::HashMap<rbx_dom_weak::types::Ref, u32>,
+    std::collections::HashMap<rbx_dom_weak::types::Ref, u32>,
+) {
     let normalization = model_normalize::prepare_model_diff_pivots_view(old_dom, new_dom);
     let changes = compact_diff::compute_compact_changes_with_identity(
         old_dom,
