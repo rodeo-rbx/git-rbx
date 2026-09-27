@@ -224,6 +224,13 @@ fn git_diff_shows_semantic_changes_through_the_shim() {
     let summary = repo.git(&["-c", &format!("diff.rbx.command={BIN} git-diff --summary-only"), "show", "--ext-diff", "--format=", "HEAD"]);
     assert!(summary.contains("modified"), "{summary}");
 
+    // Without --ext-diff, git diffs the textconv output: `git rbx show` trees.
+    let text = repo.git(&["show", "--format=", "HEAD"]);
+    assert!(text.contains("Transparency = 0.4"), "{text}");
+    assert!(!text.contains("Binary files"), "{text}");
+    let log = repo.git(&["log", "-p", "--format=", "-1"]);
+    assert!(log.contains("Transparency = 0.4"), "{log}");
+
     // Added and deleted files (a /dev/null side) render too.
     std::fs::remove_file(repo.dir.join("map.rbxm")).unwrap();
     let removed = repo.git(&["diff"]);

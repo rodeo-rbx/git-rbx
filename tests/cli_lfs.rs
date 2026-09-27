@@ -157,6 +157,9 @@ fn git_diff_resolves_pointer_sides() {
     // Both sides pointers.
     let shown = repo.git(&["show", "--ext-diff", "--format=", "HEAD"]);
     assert!(shown.contains("Transparency"), "{shown}");
+    // The textconv sees pointer text too, and resolves it.
+    let text = repo.git(&["show", "--format=", "HEAD"]);
+    assert!(text.contains("Transparency = 0.4"), "{text}");
 }
 
 /// A skip-smudge checkout (GIT_LFS_SKIP_SMUDGE=1) leaves pointer text in a

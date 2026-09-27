@@ -53,7 +53,8 @@ properties, not bytes:
 
 ```sh
 git diff                              # worktree vs index, semantic for Roblox files
-git show --ext-diff HEAD              # git log/show need --ext-diff for external drivers
+git show HEAD                         # log/show/blame compare readable instance trees
+git show --ext-diff HEAD              # … or pass --ext-diff for the semantic differ
 git rbx changes main..feature         # every Roblox file changed between two revisions
 git rbx diff old.rbxl new.rbxl        # any two files, no git required
 git rbx diff old.rbxl new.rbxl --studio   # the same diff in Roblox Studio, in 3D
@@ -213,5 +214,8 @@ repository keeps pointers and the worktree gets real content. The managed
 - Studio adds content on load and save (services, a session camera,
   migration attributes), so a fresh Rojo build never diffs clean against a
   Studio save. Compare save with save.
-- `git log -p` and `git show` need `--ext-diff` to use the semantic diff;
-  `git diff` uses it automatically.
+- `git diff` uses the semantic diff automatically. `git log -p`, `git show`,
+  and `git blame` don't run external diff drivers, so they compare the
+  instance trees `git rbx show` prints (line diffs of text, which see a
+  renamed or moved instance as a removal and an addition); pass `--ext-diff`
+  to `log` and `show` for the semantic diff.

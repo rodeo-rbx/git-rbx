@@ -1368,6 +1368,9 @@ fn config_entries(exe: &str) -> Vec<(&'static str, String)> {
         ),
         ("merge.rbx.recursive", "binary".to_string()),
         ("diff.rbx.command", format!("{exe} git-diff")),
+        // Where git doesn't run the external diff (log -p, show, blame,
+        // grep --textconv), it diffs the instance trees `show` prints.
+        ("diff.rbx.textconv", format!("{exe} show")),
         (
             "mergetool.rbx.cmd",
             format!("{exe} resolve \"$MERGED\" --studio"),
@@ -1503,7 +1506,7 @@ fn cmd_install(options: InstallOptions) -> Result<()> {
         git_run(&["config", options.scope.flag(), key, value])?;
     }
     eprintln!(
-        "Wrote {} git config: merge.rbx.* (driver), diff.rbx.* (git diff), mergetool.rbx.* (Studio resolver)",
+        "Wrote {} git config: merge.rbx.* (driver), diff.rbx.* (git diff; instance trees for log/show/blame), mergetool.rbx.* (Studio resolver)",
         match options.scope {
             ConfigScope::Global => "global",
             ConfigScope::Local => "repository",
@@ -1560,7 +1563,7 @@ fn cmd_install(options: InstallOptions) -> Result<()> {
     if options.scope == ConfigScope::Global {
         eprintln!("Done. Each teammate runs `git rbx install` once; the .gitattributes change ships with the repository.");
     }
-    eprintln!("Note: `git diff` uses the semantic differ automatically; `git log -p` and `git show` need --ext-diff.");
+    eprintln!("Note: `git diff` uses the semantic differ; `git log -p`, `git show`, and `git blame` compare readable instance trees (pass --ext-diff to log/show for the semantic differ).");
     Ok(())
 }
 
