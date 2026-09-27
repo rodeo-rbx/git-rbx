@@ -8372,6 +8372,12 @@ local oldIdx = index(options.old)
 			root.kind = "Add"
 			root.subtreeCount = op.instanceCount
 			for _, added in op.subtree or {} do
+				-- The subtree lists instances moved into it (and what moved with
+				-- them) too; those exist in the old manifest, and their reparent
+				-- op places them.
+				if oldIdx.byId[added.id] then
+					continue
+				end
 				local node = nodes[added.id]
 				if not node then
 					node = {
