@@ -22,6 +22,7 @@ mod reference_value;
 mod rigid_groups;
 mod semantic_verify;
 mod value_compare;
+pub mod view;
 
 pub use conflict_file::{
     conflict_report, finalize, find_container, list_entries, mark_entry, mark_entry_custom,

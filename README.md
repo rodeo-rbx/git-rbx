@@ -146,6 +146,7 @@ git rbx resolve <file> --take custom --entry NAME --value JSON
 git rbx resolve <file> --finalize
 git rbx resolve <file> --studio
 git rbx check <file> [--json]
+git rbx view <file> [<new-file>]
 git rbx install [--global|--local] [--no-attributes] [--hooks] [--exe PATH] [--check]
 git rbx git-diff <git external-diff arguments>
 ```
@@ -177,6 +178,13 @@ git rbx git-diff <git external-diff arguments>
   its authored properties, `remove`, `reparent`, `setName`, `setProperty`
   with typed before/after values), and `pivots`. Applying the ops to the
   old version yields the new one.
+- **`view`** is the input for editor viewers such as
+  [`editors/vscode`](editors/vscode). With one file it lists every instance
+  with its non-default properties; with two it adds the diff document
+  between them, whose ids the instances carry (the document's manifests,
+  which the instance lists replace, are left empty). Both forms include each
+  class's default property values, so a viewer can show every property, and
+  its Content-typed properties, whose values point at previewable assets.
 
 ## GitHub
 

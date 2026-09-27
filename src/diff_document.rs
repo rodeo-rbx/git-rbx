@@ -153,7 +153,7 @@ fn value_json(
 
 /// Every authored, non-default property of one instance, with container
 /// properties expanded per key exactly as edits are.
-fn authored_properties(
+pub(crate) fn authored_properties(
     dom: &dyn DomView,
     ids: &HashMap<Ref, u32>,
     referent: Ref,
@@ -347,6 +347,16 @@ pub fn build(
     changes: &SemanticChangeSet,
     config: &DiffConfig,
 ) -> DiffDocument {
+    build_with_ids(old, new, changes, config).0
+}
+
+/// [`build`], also returning the ids it numbered each side's instances with.
+pub(crate) fn build_with_ids(
+    old: &dyn DomView,
+    new: &dyn DomView,
+    changes: &SemanticChangeSet,
+    config: &DiffConfig,
+) -> (DiffDocument, HashMap<Ref, u32>, HashMap<Ref, u32>) {
     let mut next_id = 1;
     let (old_tree, old_ids) = capture_tree(old, &HashMap::new(), &mut next_id);
     let known: HashMap<Ref, u32> = changes
@@ -373,14 +383,15 @@ pub fn build(
         .collect();
     counts.pivoted = pivots.len();
 
-    DiffDocument {
+    let document = DiffDocument {
         schema: DOCUMENT_SCHEMA,
         old: manifest(old_tree),
         new: manifest(new_tree),
         counts,
         ops,
         pivots,
-    }
+    };
+    (document, old_ids, new_ids)
 }
 
 impl DocumentOp {

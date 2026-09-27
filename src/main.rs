@@ -67,6 +67,17 @@ enum Command {
         #[arg(long, conflicts_with_all = ["json", "summary_only", "format"])]
         studio: bool,
     },
+    /// JSON for editor viewers: every instance with its non-default
+    /// properties, each class's defaults and Content-typed properties, and
+    /// with two files the diff document between them, whose ids the instances
+    /// carry. Git LFS pointers are resolved
+    View {
+        /// The file, or the old version when NEW_FILE is given
+        file: String,
+
+        /// The new version, to include the changes from FILE to it
+        new_file: Option<String>,
+    },
     /// Semantic diff of every Roblox file changed between two revisions —
     /// what `git diff --stat` cannot say about binaries. Rename-aware and
     /// Git LFS-aware; one section per file. Built for CI (step summaries,
@@ -263,6 +274,7 @@ fn main() -> Result<()> {
             });
             cmd_diff(&old_file, &new_file, format, max_rows, timing)
         }
+        Command::View { file, new_file } => cmd_view(&file, new_file.as_deref()),
         Command::Changes {
             base,
             head,
@@ -427,6 +439,19 @@ fn cmd_diff(
         eprintln!("  Total: {:?}", total_time);
     }
 
+    Ok(())
+}
+
+fn cmd_view(file: &str, new_file: Option<&str>) -> Result<()> {
+    let document = match new_file {
+        Some(new_file) => {
+            let old_dom = load_diff_file(file, None)?.0;
+            let mut new_dom = load_diff_file(new_file, None)?.0;
+            git_rbx::view::view_document(Some(&old_dom), &mut new_dom)
+        }
+        None => git_rbx::view::view_document(None, &mut load_diff_file(file, None)?.0),
+    };
+    println!("{}", serde_json::to_string(&document)?);
     Ok(())
 }
 
