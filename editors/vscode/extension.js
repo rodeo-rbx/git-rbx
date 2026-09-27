@@ -105,29 +105,49 @@ async function materialize(version, root) {
 	}
 }
 
-async function gitRbxView(cwd, files) {
+async function gitRbxJson(cwd, args) {
 	const executable = vscode.workspace.getConfiguration("gitRbx").get("path") || "git-rbx";
-	const out = await run(executable, ["view", ...files], { cwd });
+	const out = await run(executable, args, { cwd });
 	return JSON.parse(out.toString());
 }
 
-// The `view` document for two versions. When one side doesn't have the file,
-// the other side's tree stands alone and every instance counts as added or
-// removed.
+// One version: `git rbx show`, its instances with their properties.
+function showFile(cwd, file) {
+	return gitRbxJson(cwd, ["show", "--format", "json", file]);
+}
+
+// Two versions: the diff document with each side's properties, from which
+// each side's instance list is rebuilt. The panel reads only the document's
+// ops, pivots, and counts, so the rest is dropped before it's posted.
+async function diffFiles(cwd, oldFile, newFile) {
+	const document = await gitRbxJson(cwd, ["diff", "--format", "json", "--with-properties", oldFile, newFile]);
+	const instances = (manifest, properties) => manifest.map((node) => ({ ...node, properties: properties[node.id] ?? {} }));
+	const loaded = {
+		old: instances(document.old, document.properties.old),
+		new: instances(document.new, document.properties.new),
+		defaults: document.defaults,
+		content: document.content,
+	};
+	loaded.document = { ops: document.ops, pivots: document.pivots, counts: document.counts };
+	return loaded;
+}
+
+// Both versions of a diff. When one side doesn't have the file, the other
+// side's tree stands alone and every instance counts as added or removed.
 async function loadDiff(original, modified) {
 	const root = (await repoRootOf(modified.fsPath)) ?? (await repoRootOf(original.fsPath));
 	const cwd = root ?? path.dirname(modified.fsPath);
 	const [oldFile, newFile] = await Promise.all([materialize(original, root), materialize(modified, root)]);
 	if (oldFile && newFile) {
-		return gitRbxView(cwd, [oldFile, newFile]);
+		return diffFiles(cwd, oldFile, newFile);
 	}
 	if (newFile) {
-		const view = await gitRbxView(cwd, [newFile]);
-		return { old: null, new: view.new, document: null, whole: "added", defaults: view.defaults, content: view.content };
+		const shown = await showFile(cwd, newFile);
+		return { old: null, new: shown.instances, document: null, whole: "added", defaults: shown.defaults, content: shown.content };
 	}
 	if (oldFile) {
-		const view = await gitRbxView(cwd, [oldFile]);
-		return { old: view.new, new: null, document: null, whole: "removed", defaults: view.defaults, content: view.content };
+		const shown = await showFile(cwd, oldFile);
+		return { old: shown.instances, new: null, document: null, whole: "removed", defaults: shown.defaults, content: shown.content };
 	}
 	throw new Error(`Neither ${original.label} nor ${modified.label} has ${path.basename(modified.fsPath)}`);
 }
@@ -367,15 +387,15 @@ class ViewerProvider {
 			if (!file) {
 				throw new Error(`${version.label} has no ${path.basename(version.fsPath)}`);
 			}
-			const view = await gitRbxView(root ?? path.dirname(version.fsPath), [file]);
+			const shown = await showFile(root ?? path.dirname(version.fsPath), file);
 			message = {
 				type: "load",
 				mode: "single",
-				new: view.new,
+				new: shown.instances,
 				labels: { new: version.label },
 				icons: iconsFor(panel.webview),
-				defaults: view.defaults,
-				content: view.content,
+				defaults: shown.defaults,
+				content: shown.content,
 				previews: previewsEnabled(),
 			};
 		} catch (error) {

@@ -3,7 +3,7 @@
   "displayName": "git-rbx Viewer",
   "description": "Shows rbxm/rbxl files as instance trees with properties, and their diffs as a tree of changes, as the git-rbx Studio diff viewer shows them.",
   "publisher": "rodeo-rbx",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "repository": {
     "type": "git",
     "url": "https://github.com/rodeo-rbx/git-rbx"
@@ -38,7 +38,7 @@
         "gitRbx.path": {
           "type": "string",
           "default": "git-rbx",
-          "markdownDescription": "The `git-rbx` executable. Needs the `view` subcommand."
+          "markdownDescription": "The `git-rbx` executable. Needs `show` and `diff --with-properties`."
         },
         "gitRbx.studioContentPath": {
           "type": "string",

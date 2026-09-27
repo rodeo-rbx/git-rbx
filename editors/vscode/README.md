@@ -15,8 +15,8 @@ property.
   thumbnails API (cached on disk), `rbxasset://` paths from the local Studio
   install. Class icons also come from the local Studio install.
 
-It runs `git rbx view`, so it needs a git-rbx with that command on `PATH`, or
-set `gitRbx.path`.
+It runs `git rbx show` and `git rbx diff --format json --with-properties`,
+so it needs a git-rbx with those on `PATH`, or set `gitRbx.path`.
 
 ## Settings
 
