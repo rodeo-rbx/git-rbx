@@ -1,0 +1,464 @@
+/* git-rbx's Studio theme (studio-viewer/shared/library/theme.luau): the VS
+   Code dark diff palette, #404040 guides, #094771 selection, monospace,
+   24px rows. Light themes get darker variants of the same roles. */
+:root {
+	--added: #4ec9b0;
+	--removed: #f14c4c;
+	--modified: #dcdcaa;
+	--reparented: #4ec1ff;
+	--pivoted: #ce9178;
+	--text: #d4d4d4;
+	--muted: #808080;
+	--border: #404040;
+	--selection: #094771;
+	--stripe: rgba(0, 0, 0, 0.18);
+	--hover: #2a2d2e;
+	/* Class icons are tinted by multiplying with the row color, as Studio's
+	   ImageColor3 does. */
+	--icon-plain: var(--text);
+}
+
+body.vscode-light {
+	--added: #16825d;
+	--removed: #cd3131;
+	--modified: #895503;
+	--reparented: #0070c1;
+	--pivoted: #a1501f;
+	--text: #333333;
+	--muted: #6e6e6e;
+	--border: #c8c8c8;
+	--selection: #add6ff;
+	--stripe: rgba(0, 0, 0, 0.04);
+	--hover: #e8e8e8;
+	--icon-plain: #ffffff;
+}
+
+html,
+body {
+	height: 100%;
+	margin: 0;
+}
+
+body {
+	display: flex;
+	flex-direction: column;
+	background: var(--vscode-editor-background);
+	color: var(--text);
+	font-family: var(--vscode-editor-font-family, "Roboto Mono"), monospace;
+	font-size: 14px;
+}
+
+#header {
+	flex: none;
+	padding: 6px 10px;
+	border-bottom: 1px solid var(--border);
+}
+
+#header .title {
+	color: var(--muted);
+	font-size: 12px;
+	letter-spacing: 0.02em;
+}
+
+#header .title .versions {
+	margin-left: 16px;
+	color: var(--text);
+	letter-spacing: 0;
+}
+
+/* Toolbar: search, the two scopes, expand and collapse all. */
+.toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	align-items: center;
+	margin-top: 6px;
+	font-size: 12px;
+}
+
+.toolbar input.search {
+	flex: 1 1 200px;
+	min-width: 140px;
+	max-width: 360px;
+	padding: 3px 6px;
+	font: inherit;
+	color: var(--vscode-input-foreground);
+	background: var(--vscode-input-background);
+	border: 1px solid var(--vscode-input-border, var(--border));
+	border-radius: 2px;
+	outline: none;
+}
+
+.toolbar input.search:focus {
+	border-color: var(--vscode-focusBorder);
+}
+
+.toolbar .match-count {
+	color: var(--muted);
+	min-width: 64px;
+}
+
+.toolbar .scope {
+	color: var(--muted);
+}
+
+.toolbar select {
+	font: inherit;
+	color: var(--vscode-dropdown-foreground);
+	background: var(--vscode-dropdown-background);
+	border: 1px solid var(--vscode-dropdown-border, var(--border));
+	border-radius: 2px;
+	padding: 2px 4px;
+}
+
+.toolbar button {
+	font: inherit;
+	color: var(--vscode-button-secondaryForeground);
+	background: var(--vscode-button-secondaryBackground);
+	border: none;
+	border-radius: 2px;
+	padding: 3px 8px;
+	cursor: pointer;
+}
+
+.toolbar button:hover {
+	background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.name mark {
+	color: inherit;
+	background: var(--vscode-editor-findMatchHighlightBackground, rgba(234, 92, 0, 0.33));
+	border-radius: 2px;
+}
+
+#header.error {
+	color: var(--vscode-errorForeground);
+	white-space: pre-wrap;
+}
+
+#list {
+	flex: 1;
+	position: relative;
+	overflow: auto;
+}
+
+.spacer {
+	width: 1px;
+}
+
+.empty {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--muted);
+}
+
+.row {
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 24px;
+	line-height: 24px;
+	overflow: hidden;
+	white-space: nowrap;
+	cursor: default;
+}
+
+.row.stripe {
+	background: var(--stripe);
+}
+
+.row:hover {
+	background: var(--hover);
+}
+
+/* Ancestors of the selection: the selection color at 15%, as the Studio
+   resolver's on-path rows. */
+.row.on-path {
+	background: color-mix(in srgb, var(--selection) 15%, transparent);
+}
+
+.row.selected {
+	background: var(--selection);
+}
+
+/* Studio's UIPadding: content sits 10px in from both edges. */
+.content {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 10px;
+	right: 10px;
+}
+
+/* Kind colors (DomLabel.colorOf). */
+.row.node {
+	--kind: var(--text);
+}
+.row.node.add {
+	--kind: var(--added);
+}
+.row.node.remove {
+	--kind: var(--removed);
+}
+.row.node.edit {
+	--kind: var(--modified);
+}
+.row.node.reparent {
+	--kind: var(--reparented);
+}
+.row.node.pivot {
+	--kind: var(--pivoted);
+}
+
+.guide {
+	position: absolute;
+	top: -1px;
+	width: 2px;
+	background: var(--border);
+}
+
+.connector {
+	position: absolute;
+	top: 12px;
+	height: 2px;
+	background: var(--border);
+}
+
+.disclosure {
+	position: absolute;
+	top: 8px;
+	width: 8px;
+	height: 8px;
+	color: var(--muted);
+}
+
+.marker {
+	position: absolute;
+	left: 0;
+	top: 5px;
+	width: 14px;
+	height: 14px;
+	color: var(--kind);
+}
+
+.class-icon {
+	position: absolute;
+	top: 4px;
+	width: 16px;
+	height: 16px;
+	background-size: 16px 16px;
+	background-color: var(--kind);
+	background-blend-mode: multiply;
+	-webkit-mask-size: 16px 16px;
+	-webkit-mask-repeat: no-repeat;
+}
+
+.row.node.plain .class-icon {
+	background-color: var(--icon-plain);
+}
+
+.name {
+	position: absolute;
+	top: 0;
+	right: 50px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: var(--kind);
+}
+
+.row.node:not(.plain) .name {
+	font-weight: 700;
+}
+
+.count {
+	position: absolute;
+	top: 0;
+	right: 0;
+	width: 48px;
+	text-align: right;
+	color: var(--muted);
+}
+
+/* Property table: Property / sign / Value, indented under the instance. */
+.columns {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	right: 6px;
+	display: flex;
+	gap: 4px;
+	align-items: center;
+	font-size: 12px;
+}
+
+.columns > .cell {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.columns > :nth-child(1) {
+	flex: 30 1 0;
+}
+.columns > :nth-child(2) {
+	flex: 0 0 10px;
+	text-align: center;
+}
+.columns > :nth-child(3) {
+	flex: 70 1 0;
+}
+
+/* Diff lines, as a git diff: the old value's line red, the new one's green. */
+.row.line.minus .columns {
+	background: var(--vscode-diffEditor-removedLineBackground, rgba(241, 76, 76, 0.15));
+}
+.row.line.plus .columns {
+	background: var(--vscode-diffEditor-insertedLineBackground, rgba(78, 201, 176, 0.15));
+}
+.row.line.minus .sign {
+	color: var(--removed);
+}
+.row.line.plus .sign {
+	color: var(--added);
+}
+.row.line:not(.same) .value {
+	color: var(--text);
+}
+
+.table-header .cell {
+	font-weight: 700;
+	color: var(--text);
+}
+
+/* Names sit one tree step in from their section header; values stay under
+   the Value header. */
+.line .property {
+	color: var(--text);
+	padding-left: 12px;
+}
+
+.value {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	color: var(--muted);
+}
+
+.value .label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.swatch {
+	flex: none;
+	width: 16px;
+	height: 16px;
+	border-radius: 4px;
+	border: 1px solid var(--border);
+	box-sizing: border-box;
+}
+
+.swatch.gradient {
+	width: 32px;
+}
+
+/* Asset previews. Transparent images sit on a checkerboard. */
+.thumb,
+.preview-image {
+	flex: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	border-radius: 2px;
+	background: conic-gradient(rgba(128, 128, 128, 0.25) 25%, transparent 0 50%, rgba(128, 128, 128, 0.25) 0 75%, transparent 0) 0 0 / 8px 8px;
+}
+
+.thumb {
+	width: 16px;
+	height: 16px;
+}
+
+.thumb img,
+.preview-image img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.thumb.loading,
+.preview-image.loading {
+	opacity: 0.4;
+}
+
+.thumb.unavailable,
+.preview-image.unavailable {
+	background: none;
+	border: 1px dashed var(--border);
+	box-sizing: border-box;
+}
+
+.row.line.asset {
+	cursor: pointer;
+}
+
+.asset-disclosure {
+	flex: none;
+	width: 8px;
+	height: 8px;
+	color: var(--muted);
+}
+
+.row.preview {
+	cursor: default;
+}
+
+.preview-frame {
+	position: absolute;
+	top: 6px;
+	bottom: 6px;
+	right: 6px;
+	display: flex;
+	gap: 14px;
+	align-items: flex-start;
+}
+
+.preview-image {
+	width: 132px;
+	height: 132px;
+}
+
+.preview-details {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	align-items: flex-start;
+	font-size: 12px;
+	line-height: 16px;
+}
+
+.preview-title {
+	color: var(--text);
+}
+
+.preview-state {
+	color: var(--muted);
+}
+
+.preview-details button {
+	font: inherit;
+	color: var(--vscode-button-secondaryForeground);
+	background: var(--vscode-button-secondaryBackground);
+	border: none;
+	border-radius: 2px;
+	padding: 3px 8px;
+	cursor: pointer;
+}
+
+.preview-details button:hover {
+	background: var(--vscode-button-secondaryHoverBackground);
+}

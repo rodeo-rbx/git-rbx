@@ -1,0 +1,59 @@
+{
+  "name": "git-rbx-viewer",
+  "displayName": "git-rbx Viewer",
+  "description": "Shows rbxm/rbxl files as instance trees with properties, and their diffs as a tree of changes, as the git-rbx Studio diff viewer shows them.",
+  "publisher": "rodeo-rbx",
+  "version": "0.0.14",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rodeo-rbx/git-rbx"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Visualization",
+    "SCM Providers"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "gitRbx.viewer",
+        "displayName": "Roblox Instance Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.rbxm"
+          },
+          {
+            "filenamePattern": "*.rbxl"
+          }
+        ],
+        "priority": "option"
+      }
+    ],
+    "configuration": {
+      "title": "git-rbx Viewer",
+      "properties": {
+        "gitRbx.path": {
+          "type": "string",
+          "default": "git-rbx",
+          "markdownDescription": "The `git-rbx` executable. Needs the `view` subcommand."
+        },
+        "gitRbx.studioContentPath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Roblox Studio's `content` folder, for class icons. Found automatically in the default install location."
+        },
+        "gitRbx.assetPreviews": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Preview the assets that Content and ContentId properties point at. Roblox assets load from Roblox's public thumbnails API; `rbxasset://` paths from your Studio install."
+        }
+      }
+    }
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ]
+}
