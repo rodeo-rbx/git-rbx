@@ -33,6 +33,12 @@ jobs:
   verify:
     name: Verify
     runs-on: ubuntu-latest
+    env:
+      # The Rust toolchain comes from dtolnay/rust-toolchain, and the
+      # Studio-only tools (rodeo, iconify, asphalt, selene, luau-lsp, stylua)
+      # aren't needed to rebuild the bundles; rodeo has no Linux build. Set for
+      # the whole job so `mise run bundle` doesn't install them either.
+      MISE_DISABLE_TOOLS: "rust,ubi:revvy02/rodeo,ubi:revvy02/rbx-iconify,ubi:jacktabscode/asphalt,ubi:Kampfkarren/selene,ubi:JohnnyMorganz/luau-lsp,stylua"
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -61,13 +67,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Install the Studio front end toolchain
-        # pesde, rojo, node, darklua from mise.toml; the Rust toolchain and
-        # the Studio-only tools (rodeo, iconify, asphalt, selene, luau-lsp)
-        # are not needed to rebuild the bundles.
+        # pesde, rojo, node, darklua from mise.toml (the job's
+        # MISE_DISABLE_TOOLS skips the rest).
         uses: jdx/mise-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MISE_DISABLE_TOOLS: "rust,ubi:revvy02/rodeo,ubi:revvy02/rbx-iconify,ubi:jacktabscode/asphalt,ubi:Kampfkarren/selene,ubi:JohnnyMorganz/luau-lsp,stylua"
 
       - name: Check the committed Studio bundles are current
         # The CLI embeds studio-viewer/dist/; a stale bundle would ship a
