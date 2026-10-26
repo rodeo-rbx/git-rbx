@@ -1,6 +1,6 @@
 [submodule "rbx-dom"]
 	path = rbx-dom
-	url = https://github.com/revvy02/rbx-dom.git
+	url = https://github.com/rodeo-rbx/rbx-dom.git
 	branch = git-rbx-direct-dom
 [submodule "fixtures"]
 	path = rc-fixtures
