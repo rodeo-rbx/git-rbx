@@ -539,7 +539,7 @@ checksum = "63b8176103e19a2643978565ca18b50549f6101881c443590420e4dc998a3c69"
 
 [[package]]
 name = "rbx_binary"
-version = "3.0.0"
+version = "3.0.1"
 dependencies = [
  "ahash",
  "log",
@@ -573,7 +573,7 @@ dependencies = [
 
 [[package]]
 name = "rbx_reflection_database"
-version = "3.0.0+roblox-728"
+version = "3.0.1+roblox-741"
 dependencies = [
  "dirs",
  "log",
@@ -597,7 +597,7 @@ dependencies = [
 
 [[package]]
 name = "rbx_xml"
-version = "3.0.0"
+version = "3.0.1"
 dependencies = [
  "ahash",
  "base64",
