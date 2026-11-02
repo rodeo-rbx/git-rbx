@@ -14,6 +14,13 @@ property.
 - Content properties preview their assets: Roblox assets through the public
   thumbnails API (cached on disk), `rbxasset://` paths from the local Studio
   install. Class icons also come from the local Studio install.
+- With [roblox-headless-renderer](https://github.com/TabooHarmony/roblox-headless-renderer)
+  installed (`rhr`), a picture of the file sits over its tree, and a diff
+  shows the two versions' pictures side by side: a model framed as an icon
+  (a GUI laid out, when there's no 3D to frame), a place as a frame of its
+  world. Pictures are previews, not Studio's exact render. Each version is
+  drawn once and cached by content; files with nothing to draw (animations)
+  say so. Clicking a picture opens it full size.
 
 It runs `git rbx show` and `git rbx diff --format json --with-properties`,
 so it needs a git-rbx with those on `PATH`, or set `gitRbx.path`.
@@ -22,6 +29,9 @@ so it needs a git-rbx with those on `PATH`, or set `gitRbx.path`.
 
 - `gitRbx.path`: the git-rbx executable.
 - `gitRbx.assetPreviews`: preview assets (on by default).
+- `gitRbx.renderPreviews`: pictures of the file, when `rhr` is installed (on
+  by default).
+- `gitRbx.rhrPath`: the `rhr` executable.
 - `gitRbx.studioContentPath`: Roblox Studio's `content` folder, when it isn't
   in the default install location.
 

@@ -66,6 +66,61 @@ body {
 	letter-spacing: 0;
 }
 
+/* Pictures of the file (rhr): one, or the two versions side by side, each
+   captioned with its version. Transparent pictures sit on a checkerboard. */
+#renders {
+	flex: none;
+	display: flex;
+	gap: 12px;
+	padding: 8px 10px;
+	border-bottom: 1px solid var(--border);
+}
+
+#renders[hidden] {
+	display: none;
+}
+
+#renders figure {
+	flex: 1 1 0;
+	min-width: 0;
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+#renders figcaption {
+	color: var(--muted);
+	font-size: 12px;
+}
+
+#renders .picture {
+	height: 200px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	border-radius: 2px;
+	color: var(--muted);
+	font-size: 12px;
+	background: conic-gradient(rgba(128, 128, 128, 0.12) 25%, transparent 0 50%, rgba(128, 128, 128, 0.12) 0 75%, transparent 0) 0 0 / 16px 16px;
+}
+
+#renders .picture.loading {
+	opacity: 0.6;
+}
+
+#renders .picture.unavailable {
+	background: var(--stripe);
+}
+
+#renders .picture img {
+	max-width: 100%;
+	max-height: 100%;
+	object-fit: contain;
+	cursor: zoom-in;
+}
+
 /* Toolbar: search, the two scopes, expand and collapse all. */
 .toolbar {
 	display: flex;

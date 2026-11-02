@@ -12,10 +12,12 @@
 //
 // fromDocument, buildTree and flatten follow fromDocument.luau and
 // patchTree.luau; rows are drawn by a virtual list, since a file can hold
-// hundreds of thousands of instances.
+// hundreds of thousands of instances. Over the tree, the extension's pictures
+// of the file (rhr) sit in a band: one, or the two versions side by side.
 
 const vscode = acquireVsCodeApi();
 const header = document.getElementById("header");
+const renders = document.getElementById("renders");
 const list = document.getElementById("list");
 
 const ROW_HEIGHT = 24;
@@ -109,14 +111,19 @@ window.addEventListener("message", (event) => {
 		view = undefined;
 		header.className = "";
 		header.textContent = `Loading ${message.title}…`;
+		showRenders(undefined);
 		list.replaceChildren();
 	} else if (message.type === "error") {
 		view = undefined;
 		header.className = "error";
 		header.textContent = message.message;
+		showRenders(undefined);
 		list.replaceChildren();
 	} else if (message.type === "load") {
+		showRenders(message);
 		view = createView(message);
+	} else if (message.type === "render") {
+		setRender(message.side, message.result);
 	}
 });
 
@@ -132,6 +139,50 @@ list.addEventListener("scroll", () => view?.draw());
 window.addEventListener("resize", () => view?.draw());
 
 vscode.postMessage({ type: "ready" });
+
+// ---------------------------------------------------------------------------
+// Pictures of the whole file. The load message says which versions get one;
+// each shows "Rendering…" until its picture (or why there isn't one) arrives.
+// Clicking a picture opens it full size.
+
+// side ("old" / "new") -> its picture's element
+let pictures = new Map();
+
+function showRenders(message) {
+	pictures = new Map();
+	renders.replaceChildren();
+	renders.hidden = !message?.renders;
+	for (const side of ["old", "new"]) {
+		if (!message?.renders?.[side]) {
+			continue;
+		}
+		const figure = element("figure");
+		const picture = element("div", "picture loading", "Rendering…");
+		figure.append(element("figcaption", undefined, message.labels[side]), picture);
+		renders.append(figure);
+		pictures.set(side, picture);
+	}
+}
+
+function setRender(side, result) {
+	const picture = pictures.get(side);
+	if (!picture) {
+		return;
+	}
+	picture.className = "picture";
+	picture.replaceChildren();
+	if (result.uri) {
+		const image = element("img");
+		image.src = result.uri;
+		image.title = "Open full size";
+		image.addEventListener("click", () => vscode.postMessage({ type: "openRender", file: result.file }));
+		picture.append(image);
+	} else {
+		picture.classList.add("unavailable");
+		picture.textContent = result.state;
+		picture.title = result.detail ?? "";
+	}
+}
 
 // ---------------------------------------------------------------------------
 // Values: the CLI's text (format_property_value in src/output.rs). Numbers

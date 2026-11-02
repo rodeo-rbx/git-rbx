@@ -6,7 +6,8 @@
 // Graph, Timeline). A diff tab knows exactly which two versions it compares, so
 // when one opens we close it and open our diff panel on the same two URIs. A
 // single-file tab is reopened in the viewer (a custom editor, so "Open With"
-// works too).
+// works too). Over the tree, each version gets a picture when
+// roblox-headless-renderer (`rhr`) is installed.
 
 const vscode = require("vscode");
 const childProcess = require("child_process");
@@ -138,16 +139,17 @@ async function loadDiff(original, modified) {
 	const root = (await repoRootOf(modified.fsPath)) ?? (await repoRootOf(original.fsPath));
 	const cwd = root ?? path.dirname(modified.fsPath);
 	const [oldFile, newFile] = await Promise.all([materialize(original, root), materialize(modified, root)]);
+	const files = { old: oldFile, new: newFile };
 	if (oldFile && newFile) {
-		return diffFiles(cwd, oldFile, newFile);
+		return { ...(await diffFiles(cwd, oldFile, newFile)), files, cwd };
 	}
 	if (newFile) {
 		const shown = await showFile(cwd, newFile);
-		return { old: null, new: shown.instances, document: null, whole: "added", defaults: shown.defaults, content: shown.content };
+		return { old: null, new: shown.instances, document: null, whole: "added", defaults: shown.defaults, content: shown.content, files, cwd };
 	}
 	if (oldFile) {
 		const shown = await showFile(cwd, oldFile);
-		return { old: shown.instances, new: null, document: null, whole: "removed", defaults: shown.defaults, content: shown.content };
+		return { old: shown.instances, new: null, document: null, whole: "removed", defaults: shown.defaults, content: shown.content, files, cwd };
 	}
 	throw new Error(`Neither ${original.label} nor ${modified.label} has ${path.basename(modified.fsPath)}`);
 }
@@ -165,6 +167,7 @@ function webviewHtml(webview, media) {
 </head>
 <body>
 <div id="header">Loading…</div>
+<div id="renders" hidden></div>
 <div id="list"></div>
 <script nonce="${nonce}" src="${script}"></script>
 </body>
@@ -175,7 +178,7 @@ function webviewHtml(webview, media) {
 // It then asks for asset previews as rows come into view.
 function prepareWebview(webview, media) {
 	const icons = studioIcons();
-	const roots = [media, vscode.Uri.file(previewDirectory)];
+	const roots = [media, vscode.Uri.file(previewDirectory), vscode.Uri.file(rendersDirectory)];
 	if (icons) {
 		roots.push(vscode.Uri.file(icons.content));
 	}
@@ -202,6 +205,8 @@ function prepareWebview(webview, media) {
 			}
 		} else if (message.type === "openAsset" && /^\d+$/.test(message.id)) {
 			void vscode.env.openExternal(vscode.Uri.parse(`https://create.roblox.com/store/asset/${message.id}`));
+		} else if (message.type === "openRender" && typeof message.file === "string" && path.dirname(message.file) === rendersDirectory) {
+			void vscode.commands.executeCommand("vscode.open", vscode.Uri.file(message.file));
 		}
 	});
 	webview.html = webviewHtml(webview, media);
@@ -297,6 +302,152 @@ async function flushThumbnails() {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Pictures of a whole file, drawn by roblox-headless-renderer (`rhr`, from
+// PyPI): a model framed as an icon, or laid out as a GUI when it has no 3D
+// world to frame; a place as a frame of its world. A picture takes seconds, so
+// the tree shows first and the picture follows. Pictures are cached on disk by
+// the file's content hash, so a version is drawn once, and a file with nothing
+// to draw (an animation) caches rhr's reason instead. Without rhr, there's no
+// picture.
+
+const RENDER_TIMEOUT_MS = 120_000;
+const ICON_SIZE = 512;
+let rendersDirectory;
+// content hash -> Promise<{ file } | { state, detail }>
+const renders = new Map();
+// cwd -> Promise<boolean>: whether rhr runs there (mise pins it per repo)
+const rhrRuns = new Map();
+// One rhr at a time: it keeps a warm server, which renders in parallel only
+// queue up on.
+let renderQueue = Promise.resolve();
+
+function rendersEnabled() {
+	return vscode.workspace.getConfiguration("gitRbx").get("renderPreviews", true);
+}
+
+// rhr's exit code and stderr, rather than a rejection: exit 2 is an answer
+// (nothing to draw, and why), not a failure.
+function runRhr(args, cwd) {
+	const executable = vscode.workspace.getConfiguration("gitRbx").get("rhrPath") || "rhr";
+	return new Promise((resolve) => {
+		childProcess.execFile(executable, args, { cwd, timeout: RENDER_TIMEOUT_MS, maxBuffer: MAX_OUTPUT_BYTES }, (error, _stdout, stderr) => {
+			resolve({
+				code: !error ? 0 : typeof error.code === "number" ? error.code : -1,
+				timedOut: error?.killed === true,
+				stderr: String(stderr),
+			});
+		});
+	});
+}
+
+// Whether versions opened from cwd get pictures.
+function willRender(cwd) {
+	if (!rendersEnabled()) {
+		return Promise.resolve(false);
+	}
+	let runs = rhrRuns.get(cwd);
+	if (!runs) {
+		runs = runRhr(["--version"], cwd).then(({ code }) => code === 0);
+		rhrRuns.set(cwd, runs);
+	}
+	return runs;
+}
+
+// Why rhr didn't draw: its "rhr: " line, or the line icons gives a file it
+// failed on ("icon   <file>: kept page error: Error: <why>").
+function reasonOf(stderr) {
+	const said = [...stderr.matchAll(/^rhr: (.+)$/gm)].pop() ?? [...stderr.matchAll(/^icon\s+.+?: (?:kept page error: )?(?:Error: )?(.+)$/gm)].pop();
+	return said?.[1] ?? stderr.trim().split("\n").pop() ?? "";
+}
+
+function renderFor(file, cwd) {
+	const hash = crypto.createHash("sha1").update(fs.readFileSync(file)).digest("hex");
+	let result = renders.get(hash);
+	if (!result) {
+		result = Promise.resolve(cachedRender(hash) ?? queueRender(() => drawRender(file, hash, cwd)))
+			.catch((error) => ({ state: "Failed", detail: errorText(error), retry: true }))
+			.then((resolved) => {
+				// Not the file's own answer (rhr crashed or timed out): worth another try later
+				if (resolved.retry) {
+					renders.delete(hash);
+				}
+				return resolved;
+			});
+		renders.set(hash, result);
+	}
+	return result;
+}
+
+function cachedRender(hash) {
+	const picture = path.join(rendersDirectory, `${hash}.png`);
+	if (fs.existsSync(picture)) {
+		return { file: picture };
+	}
+	try {
+		return JSON.parse(fs.readFileSync(path.join(rendersDirectory, `${hash}.json`), "utf8"));
+	} catch {
+		return undefined;
+	}
+}
+
+function queueRender(draw) {
+	const drawn = renderQueue.then(draw);
+	renderQueue = drawn.catch(() => {});
+	return drawn;
+}
+
+async function drawRender(file, hash, cwd) {
+	const picture = path.join(rendersDirectory, `${hash}.png`);
+	const scratch = fs.mkdtempSync(path.join(rendersDirectory, "draw-"));
+	const out = path.join(scratch, "out.png");
+	const attempts =
+		path.extname(file).toLowerCase() === ".rbxl"
+			? [["preview", file, "--out", out]]
+			: [
+					["icons", file, "--out-dir", scratch, "--size", String(ICON_SIZE)],
+					["ui", file, "--fit", "--out", out],
+				];
+	try {
+		const reasons = [];
+		for (const args of attempts) {
+			const { code, timedOut, stderr } = await runRhr(args, cwd);
+			if (code === 2) {
+				reasons.push(reasonOf(stderr));
+				continue;
+			}
+			// icons names its picture after the file
+			const drawn = code === 0 && fs.readdirSync(scratch).find((name) => name.endsWith(".png"));
+			if (!drawn) {
+				return { state: timedOut ? "Timed out" : "Failed", detail: reasonOf(stderr), retry: true };
+			}
+			fs.renameSync(path.join(scratch, drawn), picture);
+			return { file: picture };
+		}
+		const nothing = { state: "Nothing to draw", detail: reasons.join("; ") };
+		fs.writeFileSync(path.join(rendersDirectory, `${hash}.json`), JSON.stringify(nothing));
+		return nothing;
+	} finally {
+		fs.rmSync(scratch, { recursive: true, force: true });
+	}
+}
+
+// Shows a version's picture, or why there isn't one, in its webview, unless the
+// panel closed meanwhile.
+async function postRender(webview, side, result) {
+	try {
+		await webview.postMessage({
+			type: "render",
+			side,
+			result: result.file
+				? { uri: webview.asWebviewUri(vscode.Uri.file(result.file)).toString(), file: result.file }
+				: { state: result.state, detail: result.detail },
+		});
+	} catch {
+		// Disposed.
+	}
+}
+
 // Studio's own class icons, read from the local install (what its Explorer
 // and the Studio diff viewer show). Undefined when Studio isn't installed.
 const iconCache = new Map();
@@ -381,13 +532,16 @@ class ViewerProvider {
 	async load(uri, panel, ready) {
 		const version = describe(uri);
 		let message;
+		let picture;
 		try {
 			const root = await repoRootOf(version.fsPath);
+			const cwd = root ?? path.dirname(version.fsPath);
 			const file = await materialize(version, root);
 			if (!file) {
 				throw new Error(`${version.label} has no ${path.basename(version.fsPath)}`);
 			}
-			const shown = await showFile(root ?? path.dirname(version.fsPath), file);
+			const [shown, draws] = await Promise.all([showFile(cwd, file), willRender(cwd)]);
+			picture = draws ? renderFor(file, cwd) : undefined;
 			message = {
 				type: "load",
 				mode: "single",
@@ -397,12 +551,16 @@ class ViewerProvider {
 				defaults: shown.defaults,
 				content: shown.content,
 				previews: previewsEnabled(),
+				renders: picture && { new: true },
 			};
 		} catch (error) {
 			message = { type: "error", message: errorText(error) };
 		}
 		await ready;
 		await panel.webview.postMessage(message);
+		if (picture) {
+			await postRender(panel.webview, "new", await picture);
+		}
 	}
 }
 
@@ -440,6 +598,7 @@ class DiffPanels {
 			});
 			entry = { panel, ready: prepareWebview(panel.webview, this.media) };
 			panel.onDidDispose(() => {
+				entry.disposed = true;
 				this.panels.delete(entry.key);
 				if (this.preview === entry) {
 					this.preview = undefined;
@@ -455,8 +614,17 @@ class DiffPanels {
 		await entry.ready;
 		await entry.panel.webview.postMessage({ type: "loading", title });
 		let message;
+		// side ("old" / "new") -> Promise of its picture
+		const pictures = {};
 		try {
 			const view = await loadDiff(original, modified);
+			if (await willRender(view.cwd)) {
+				for (const side of ["old", "new"]) {
+					if (view.files[side]) {
+						pictures[side] = renderFor(view.files[side], view.cwd);
+					}
+				}
+			}
 			message = {
 				type: "load",
 				mode: "diff",
@@ -469,6 +637,7 @@ class DiffPanels {
 				defaults: view.defaults,
 				content: view.content,
 				previews: previewsEnabled(),
+				renders: Object.keys(pictures).length > 0 ? { old: "old" in pictures, new: "new" in pictures } : undefined,
 			};
 		} catch (error) {
 			message = { type: "error", message: errorText(error) };
@@ -476,6 +645,12 @@ class DiffPanels {
 		// A preview panel may have moved on to another diff meanwhile.
 		if (entry.key === key) {
 			await entry.panel.webview.postMessage(message);
+		}
+		for (const [side, picture] of Object.entries(pictures)) {
+			const result = await picture;
+			if (entry.key === key && !entry.disposed) {
+				await postRender(entry.panel.webview, side, result);
+			}
 		}
 	}
 }
@@ -492,6 +667,8 @@ function activate(context) {
 	const media = vscode.Uri.joinPath(context.extensionUri, "media");
 	previewDirectory = path.join(context.globalStorageUri.fsPath, "asset-previews");
 	fs.mkdirSync(previewDirectory, { recursive: true });
+	rendersDirectory = path.join(context.globalStorageUri.fsPath, "renders");
+	fs.mkdirSync(rendersDirectory, { recursive: true });
 	const diffPanels = new DiffPanels(media);
 
 	context.subscriptions.push(
