@@ -293,7 +293,7 @@ dependencies = [
 
 [[package]]
 name = "git-rbx"
-version = "0.0.4"
+version = "0.0.5-rc.1"
 dependencies = [
  "anyhow",
  "blake3",
