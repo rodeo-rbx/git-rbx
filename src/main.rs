@@ -1167,7 +1167,7 @@ fn launch_studio(
     let status = cmd.status().map_err(|e| match e.kind() {
         std::io::ErrorKind::NotFound => anyhow::anyhow!(
             "`rodeo` not found on PATH — the Studio front end runs through it \
-             (https://github.com/revvy02/rodeo)"
+             (https://github.com/rodeo-rbx/rodeo)"
         ),
         _ => anyhow::Error::from(e).context("launching rodeo"),
     })?;

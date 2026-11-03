@@ -38,7 +38,7 @@ jobs:
       # Studio-only tools (rodeo, iconify, asphalt, selene, luau-lsp, stylua)
       # aren't needed to rebuild the bundles; rodeo has no Linux build. Set for
       # the whole job so `mise run bundle` doesn't install them either.
-      MISE_DISABLE_TOOLS: "rust,ubi:revvy02/rodeo,ubi:revvy02/rbx-iconify,ubi:jacktabscode/asphalt,ubi:Kampfkarren/selene,ubi:JohnnyMorganz/luau-lsp,stylua"
+      MISE_DISABLE_TOOLS: "rust,ubi:rodeo-rbx/rodeo,ubi:revvy02/rbx-iconify,ubi:rodeo-rbx/asphalt,ubi:Kampfkarren/selene,ubi:JohnnyMorganz/luau-lsp,stylua"
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:

@@ -1,13 +1,13 @@
 [tools]
 rust = "stable"
 node = "24"
-"ubi:revvy02/rodeo" = "v1.3.0"
+"ubi:rodeo-rbx/rodeo" = "v1.5.1"
 "ubi:revvy02/rbx-iconify" = "v0.3.0"
-"ubi:jacktabscode/asphalt" = "v2.0.2"
+"ubi:rodeo-rbx/asphalt" = "v2.0.2-watch.1"
 "ubi:Kampfkarren/selene" = "latest"
-"ubi:seaofvoices/darklua" = "latest"
+"ubi:rodeo-rbx/darklua" = "v0.19.0-rodeo.5"
 "ubi:JohnnyMorganz/luau-lsp" = "latest"
-"ubi:rojo-rbx/rojo" = "latest"
+"ubi:rodeo-rbx/rojo" = "v7.7.1-rodeo.1"
 "ubi:pesde-pkg/pesde" = "latest"
 stylua = "latest"
 [env]

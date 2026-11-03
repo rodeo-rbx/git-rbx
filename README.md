@@ -66,7 +66,7 @@ every changed instance highlighted by kind, removed content restored as
 translucent ghosts where it used to be, and a *changes* panel listing the
 diff as a tree. Double click a row to select and frame the instance.
 Neither input file is modified. The Studio front ends ship inside the
-binary; the only requirement is [rodeo](https://github.com/revvy02/rodeo)
+binary; the only requirement is [rodeo](https://github.com/rodeo-rbx/rodeo)
 on `PATH`.
 
 **Merge.** Nothing to do — `git merge`, `git rebase`, and `git cherry-pick`
@@ -163,7 +163,7 @@ git rbx git-diff <git external-diff arguments>
   writes go through git-rbx, so Studio's own load/save side effects never
   leak into the merge.
 - **`resolve --studio`** opens the file in Roblox Studio through
-  [rodeo](https://github.com/revvy02/rodeo) with conflicted instances
+  [rodeo](https://github.com/rodeo-rbx/rodeo) with conflicted instances
   highlighted and an Ours/Theirs/Custom panel. Decisions made there call
   back into the same `--take`/`--finalize` commands; the file on disk is
   the only source of truth, so CLI and Studio resolution can be interleaved.
