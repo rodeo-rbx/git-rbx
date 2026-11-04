@@ -15,6 +15,7 @@ see in Studio — leave it; resolving removes it). Resolve with:
 
 ## Contents
 
+- [What it looks like](#what-it-looks-like)
 - [Install](#install)
 - [Quick start](#quick-start)
 - [Change types](#change-types)
@@ -23,6 +24,52 @@ see in Studio — leave it; resolving removes it). Resolve with:
 - [GitHub](#github)
 - [Git LFS](#git-lfs)
 - [Limitations](#limitations)
+
+## What it looks like
+
+### In the editor
+
+The [git-rbx Viewer](editors/vscode) extension opens Roblox files in VS Code
+and its forks. Click a changed `.rbxm` or `.rbxl` in Source Control, the
+Graph, or the Timeline to see its diff, or open one from the Explorer to see
+the file. With
+[roblox-headless-renderer](https://github.com/TabooHarmony/roblox-headless-renderer)
+installed, a picture of each version sits above the tree.
+
+**Moved models are pivots.** This commit moved a house and two trees: 24
+parts, each with a new CFrame. Each model moved as one rigid body, so the
+diff is one pivot per model, with the transform that moved it.
+
+![The viewer's diff of the commit: pictures of the town before and after the house turned and the trees moved, over three Pivoted entries, House, Oak and Birch, each with its CFrame delta](docs/images/viewer-pivots.png)
+
+**A file on its own.** Every instance, and the properties it sets.
+
+![The viewer showing town.rbxm: a picture of the town over its instance tree, with the House model open and its Door part's properties listed](docs/images/viewer-model.png)
+
+**A particle edit.** Each changed property's old and new value, with colors
+and color sequences drawn as swatches and gradients. The pictures show what
+the edit did to the fire.
+
+![The viewer's diff of a campfire: an orange fire before and a blue one after, over the changed Color, Rate, Size and Speed of the Flames and Embers emitters and the PointLight's Color](docs/images/viewer-particles.png)
+
+### In the terminal
+
+`git diff` prints the same changes:
+
+<img src="docs/images/cli-diff.png" width="810" alt="git diff of the campfire: the Flames emitter's Color, Rate, Size and Speed, the Embers' Color and the PointLight's Color, each with its old and new value, then a summary of 3 modified">
+
+<img src="docs/images/cli-pivots.png" width="861" alt="git diff HEAD~1 HEAD of the town: House, Oak and Birch pivoted, each with its CFrame delta, then a summary of 3 pivoted">
+
+<details>
+<summary>The same commit as a line diff</summary>
+
+`git log -p` compares the instance trees that `git rbx show` prints, so it
+lists every moved part's CFrame: 54 changed lines in 18 hunks. Pass
+`--ext-diff` for the three pivots above.
+
+<img src="docs/images/cli-line-diff.png" width="838" alt="The first 40 lines of git log -p for the town commit: the House model's WorldPivotData and its Floor, FrontWall and BackWall CFrames, each as a removed and an added line">
+
+</details>
 
 ## Install
 
