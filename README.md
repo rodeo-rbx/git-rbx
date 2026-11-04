@@ -74,17 +74,24 @@ lists every moved part's CFrame: 54 changed lines in 18 hunks. Pass
 ## Install
 
 git runs `git rbx <subcommand>` by finding a `git-rbx` binary on your `PATH`.
-With [mise](https://mise.jdx.dev), add it to your project's `mise.toml` (or
-`mise use -g github:revvy02/git-rbx@latest` for every project):
+[Releases](https://github.com/rodeo-rbx/git-rbx/releases) have binaries for
+macOS (Apple silicon and Intel), Linux x86_64, and Windows x86_64. With
+[mise](https://mise.jdx.dev), add it to your project's `mise.toml` (or
+`mise use -g github:rodeo-rbx/git-rbx@latest` for every project):
 
 ```toml
 [tools]
-"github:revvy02/git-rbx" = "latest"
+"github:rodeo-rbx/git-rbx" = "latest"
 ```
-Or build from source:
+
+Or build from source. Only the `rbx-dom` submodule is needed (the other one
+holds private test fixtures):
 
 ```sh
-cargo install --locked --git https://github.com/revvy02/git-rbx
+git clone https://github.com/rodeo-rbx/git-rbx
+cd git-rbx
+git submodule update --init rbx-dom
+cargo install --locked --path .
 ```
 
 Then wire git up. Once per machine:

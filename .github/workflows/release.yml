@@ -10,7 +10,7 @@
 # Consumers then add to mise.toml:
 #
 #   [tools]
-#   "github:revvy02/git-rbx" = "latest"
+#   "github:rodeo-rbx/git-rbx" = "latest"
 #
 # Cutting a release: bump `version` in Cargo.toml, commit, then
 # `git tag v<version> && git push origin v<version>`. The verify job refuses
