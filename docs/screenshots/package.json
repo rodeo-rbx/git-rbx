@@ -1,0 +1,8 @@
+{
+	"name": "git-rbx-screenshots",
+	"private": true,
+	"description": "Regenerates the README's screenshots; see README.md",
+	"dependencies": {
+		"playwright-core": "1.56.1"
+	}
+}

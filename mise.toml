@@ -35,6 +35,10 @@ cp target/release/git-rbx bin/git-rbx.new
 mv -f bin/git-rbx.new bin/git-rbx
 """
 
+[tasks.screenshots]
+description = "Regenerate the README's screenshots (docs/images/); see docs/screenshots/README.md"
+run = "docs/screenshots/make.sh"
+
 [tasks.icons]
 description = "Generate Studio resolver icon sheets"
 run = """
